@@ -1,0 +1,62 @@
+use anchor_lang::prelude::*;
+use crate::{
+    state::{Farm, Staker},
+    errors::StakingError,
+};
+
+const PRECISION: u128 = 1_000_000_000_000;
+
+/// Updates the farm's reward accumulator (`reward_per_token_stored`).
+pub fn update_reward_accumulator(farm: &mut Account<Farm>) -> Result<()> {
+    let now = Clock::get()?.unix_timestamp;
+    let time_since_last_update = now
+        .checked_sub(farm.last_update_timestamp)
+        .ok_or(StakingError::MathOverflow)?;
+
+    if time_since_last_update > 0 && farm.total_weighted_stake > 0 {
+        let reward = (time_since_last_update as u128)
+            .checked_mul(farm.reward_rate as u128)
+            .ok_or(StakingError::MathOverflow)?;
+
+        let reward_per_token = reward
+            .checked_mul(PRECISION)
+            .ok_or(StakingError::MathOverflow)?
+            .checked_div(farm.total_weighted_stake)
+            .ok_or(StakingError::MathOverflow)?;
+
+        farm.reward_per_token_stored = farm.reward_per_token_stored
+            .checked_add(reward_per_token)
+            .ok_or(StakingError::MathOverflow)?;
+    }
+    
+    farm.last_update_timestamp = now;
+    Ok(())
+}
+
+/// Calculates the pending rewards a staker is owed.
+pub fn calculate_pending_rewards(farm: &Account<Farm>, staker: &Account<Staker>) -> Result<u64> {
+    let weighted_stake = (staker.balance as u128)
+        .checked_mul(staker.reward_multiplier as u128)
+        .ok_or(StakingError::MathOverflow)?
+        .checked_div(10000) 
+        .ok_or(StakingError::MathOverflow)?;
+
+    let reward_per_token = farm.reward_per_token_stored;
+    let reward_per_token_snapshot = staker.reward_per_token_snapshot;
+    
+    let pending_rewards = weighted_stake
+        .checked_mul(
+            reward_per_token
+                .checked_sub(reward_per_token_snapshot)
+                .ok_or(StakingError::MathOverflow)?
+        )
+        .ok_or(StakingError::MathOverflow)?
+        .checked_div(PRECISION)
+        .ok_or(StakingError::MathOverflow)?;
+
+    let total_rewards = (staker.rewards_paid)
+        .checked_add(pending_rewards)
+        .ok_or(StakingError::MathOverflow)?;
+
+    Ok(total_rewards as u64)
+}

@@ -1,0 +1,42 @@
+// FILE: programs/dloom_stake/src/instructions/fund_farm.rs
+
+use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
+
+use crate::{events::FarmFunded, state::Farm};
+
+pub fn handle_fund_farm(ctx: Context<FundFarm>, amount: u64) -> Result<()> {
+    let cpi_accounts = Transfer {
+        from: ctx.accounts.funder_token_account.to_account_info(),
+        to: ctx.accounts.reward_vault.to_account_info(),
+        authority: ctx.accounts.funder.to_account_info(),
+    };
+    let cpi_program = ctx.accounts.token_program.to_account_info();
+    let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+    token::transfer(cpi_ctx, amount)?;
+
+    emit!(FarmFunded {
+        farm_address: ctx.accounts.farm.key(),
+        funder: ctx.accounts.funder.key(),
+        amount,
+    });
+
+    Ok(())
+}
+
+#[derive(Accounts)]
+pub struct FundFarm<'info> {
+    #[account(mut)]
+    pub farm: Account<'info, Farm>,
+
+    #[account(mut, constraint = reward_vault.mint == farm.reward_mint)]
+    pub reward_vault: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub funder: Signer<'info>,
+
+    #[account(mut, constraint = funder_token_account.mint == farm.reward_mint)]
+    pub funder_token_account: Account<'info, TokenAccount>,
+
+    pub token_program: Program<'info, Token>,
+}

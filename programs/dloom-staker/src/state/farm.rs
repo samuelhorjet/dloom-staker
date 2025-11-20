@@ -1,0 +1,23 @@
+use anchor_lang::prelude::*;
+
+#[account]
+#[derive(Default, Debug)]
+pub struct Farm {
+    pub bump: u8,
+    pub authority: Pubkey,
+    pub lp_mint: Pubkey,
+    pub lp_vault: Pubkey, 
+    pub reward_mint: Pubkey,
+    pub reward_vault: Pubkey,
+    pub reward_rate: u64, 
+    pub last_update_timestamp: i64,
+    pub total_weighted_stake: u128,
+    pub reward_per_token_stored: u128, 
+    pub lockup_tiers: Vec<LockupTier>,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Default, Debug, PartialEq)]
+pub struct LockupTier {
+    pub duration: i64,
+    pub multiplier: u16, 
+}

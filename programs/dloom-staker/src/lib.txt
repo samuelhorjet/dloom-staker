@@ -1,0 +1,61 @@
+// FILE: programs/dloom_stake/src/lib.rs
+
+use anchor_lang::prelude::*;
+
+pub mod errors;
+pub mod events;
+pub mod instructions;
+pub mod state;
+
+use instructions::*;
+
+declare_id!("D67Cj1mwDuJZKJ9DW9MksWAXZQk3hh7nB6AGzcf6hkph");
+
+#[program]
+pub mod dloom_staker {
+    use super::*;
+
+    // --- ADMIN INSTRUCTIONS ---
+
+    pub fn create_farm(ctx: Context<CreateFarm>) -> Result<()> {
+        instructions::create_farm::handle_create_farm(ctx)
+    }
+
+    pub fn add_lockup_tier(
+        ctx: Context<ManageFarm>,
+        duration: i64,
+        multiplier: u16,
+    ) -> Result<()> {
+        instructions::add_lockup_tier::handle_add_lockup_tier(ctx, duration, multiplier)
+    }
+
+    pub fn fund_farm(ctx: Context<FundFarm>, amount: u64) -> Result<()> {
+        instructions::fund_farm::handle_fund_farm(ctx, amount)
+    }
+
+    pub fn set_reward_rate(ctx: Context<ManageFarm>, new_rate: u64) -> Result<()> {
+        instructions::set_reward_rate::handle_set_reward_rate(ctx, new_rate)
+    }
+
+    // --- USER INSTRUCTIONS ---
+
+    pub fn initialize_staker(ctx: Context<InitializeStaker>) -> Result<()> {
+        instructions::initialize_staker::handle_initialize_staker(ctx)
+    }
+
+    pub fn stake(ctx: Context<UpdateStake>, amount: u64, duration: i64) -> Result<()> {
+        instructions::stake::handle_stake(ctx, amount, duration)
+    }
+
+    pub fn unstake(ctx: Context<UpdateStake>, amount: u64) -> Result<()> {
+        instructions::unstake::handle_unstake(ctx, amount)
+    }
+
+    pub fn claim_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
+        instructions::claim_rewards::handle_claim_rewards(ctx)
+    }
+
+    pub fn compound(ctx: Context<ClaimCompound>) -> Result<()> {
+        instructions::compound::handle_compound(ctx)
+    }
+}

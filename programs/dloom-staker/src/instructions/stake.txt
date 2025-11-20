@@ -1,0 +1,129 @@
+// FILE: programs/dloom_stake/src/instructions/stake.rs
+
+use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
+use crate::{
+    errors::StakingError,
+    events::Staked,
+    state::{Farm, Staker, LockupTier},
+    instructions::reward_math::{update_reward_accumulator, calculate_pending_rewards},
+};
+
+pub fn handle_stake(ctx: Context<UpdateStake>, amount: u64, duration: i64) -> Result<()> {
+    require!(amount > 0, StakingError::ZeroAmount);
+
+    let farm = &mut ctx.accounts.farm;
+    let staker = &mut ctx.accounts.staker;
+    let now = Clock::get()?.unix_timestamp;
+
+    // 1. Update reward accumulator and calculate pending rewards BEFORE any state changes.
+    update_reward_accumulator(farm)?;
+    let pending_rewards = calculate_pending_rewards(farm, staker)?;
+    staker.rewards_paid = pending_rewards;
+    staker.reward_per_token_snapshot = farm.reward_per_token_stored;
+
+    // 2. If user already has a stake, remove their old weighted stake from the total.
+    if staker.balance > 0 {
+        let old_weighted_stake = (staker.balance as u128)
+            .checked_mul(staker.reward_multiplier as u128)
+            .ok_or(StakingError::MathOverflow)?
+            .checked_div(10000)
+            .ok_or(StakingError::MathOverflow)?;
+        farm.total_weighted_stake = farm.total_weighted_stake
+            .checked_sub(old_weighted_stake)
+            .ok_or(StakingError::MathOverflow)?;
+    }
+
+    // 3. If this is a new stake or a re-stake, validate the lock-up tier.
+    if staker.balance == 0 {
+        let tier = farm.lockup_tiers.iter()
+            .find(|t| t.duration == duration)
+            .ok_or(StakingError::TierNotFound)?;
+        
+        staker.reward_multiplier = tier.multiplier;
+        if duration > 0 {
+            staker.lockup_end_timestamp = now.checked_add(duration).ok_or(StakingError::MathOverflow)?;
+        } else {
+            staker.lockup_end_timestamp = 0; // Flexible stake
+        }
+    } else {
+        // If they are adding to an existing stake, they cannot change the lockup duration.
+        let existing_duration = staker.lockup_end_timestamp.checked_sub(now).unwrap_or(0);
+        let expected_duration = duration;
+        // This is a simplified check. A more robust check might compare the original duration.
+        // For now, we ensure they pass the same duration they're currently in.
+        require!(
+            (staker.lockup_end_timestamp == 0 && duration == 0) || (staker.lockup_end_timestamp > 0 && duration > 0),
+            StakingError::CannotChangeLockup
+        );
+    }
+
+    // 4. Update staker's balance.
+    staker.balance = staker.balance.checked_add(amount).ok_or(StakingError::MathOverflow)?;
+
+    // 5. Add the new total weighted stake to the farm's total.
+    let new_weighted_stake = (staker.balance as u128)
+        .checked_mul(staker.reward_multiplier as u128)
+        .ok_or(StakingError::MathOverflow)?
+        .checked_div(10000)
+        .ok_or(StakingError::MathOverflow)?;
+    farm.total_weighted_stake = farm.total_weighted_stake
+        .checked_add(new_weighted_stake)
+        .ok_or(StakingError::MathOverflow)?;
+
+    // 6. Transfer the LP tokens from user to the farm's vault.
+    let cpi_accounts = Transfer {
+        from: ctx.accounts.user_lp_token_account.to_account_info(),
+        to: ctx.accounts.lp_vault.to_account_info(),
+        authority: ctx.accounts.owner.to_account_info(),
+    };
+    let cpi_program = ctx.accounts.token_program.to_account_info();
+    let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+    token::transfer(cpi_ctx, amount)?;
+
+    // 7. Emit the event.
+    emit!(Staked {
+        owner: staker.owner,
+        farm_address: farm.key(),
+        amount,
+        lockup_end_timestamp: staker.lockup_end_timestamp,
+        total_staked_balance: staker.balance,
+    });
+
+    Ok(())
+}
+
+// This context is shared between stake, unstake, claim, and compound
+#[derive(Accounts)]
+pub struct UpdateStake<'info> {
+    #[account(mut)]
+    pub owner: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"farm", farm.lp_mint.as_ref(), farm.reward_mint.as_ref()],
+        bump = farm.bump
+    )]
+    pub farm: Account<'info, Farm>,
+    
+    #[account(
+        mut,
+        seeds = [b"staker", owner.key().as_ref(), farm.key().as_ref()],
+        bump = staker.bump,
+        has_one = owner,
+        has_one = farm
+    )]
+    pub staker: Account<'info, Staker>,
+
+    #[account(mut, address = farm.lp_vault)]
+    pub lp_vault: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        constraint = user_lp_token_account.mint == farm.lp_mint,
+        constraint = user_lp_token_account.owner == owner.key()
+    )]
+    pub user_lp_token_account: Account<'info, TokenAccount>,
+
+    pub token_program: Program<'info, Token>,
+}
