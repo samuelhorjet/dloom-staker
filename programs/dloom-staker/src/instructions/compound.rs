@@ -6,10 +6,13 @@ use crate::{
     errors::StakingError,
     events::Compounded,
     state::{Farm, Staker},
-    instructions::reward_math::{update_reward_accumulator, calculate_pending_rewards},
+    // FIX: Use the new sync function and PRECISION
+    instructions::reward_math::{update_reward_accumulator, sync_staker_rewards, PRECISION},
 };
 
 pub fn handle_compound(ctx: Context<Compound>) -> Result<()> {
+     require!(!ctx.accounts.farm.is_paused, StakingError::FarmPaused);
+     
     let farm = &mut ctx.accounts.farm;
     let staker = &mut ctx.accounts.staker;
 
@@ -19,13 +22,15 @@ pub fn handle_compound(ctx: Context<Compound>) -> Result<()> {
         StakingError::CompoundingNotSupported
     );
     
-    // 2. Math
+    // 2. Math (Sync Rewards)
     update_reward_accumulator(farm)?;
-    let pending_rewards = calculate_pending_rewards(farm, staker)?;
+    sync_staker_rewards(farm, staker)?;
+
+    let pending_rewards = staker.earned_rewards;
     require!(pending_rewards > 0, StakingError::NoRewardsToClaim);
 
-    staker.rewards_paid = pending_rewards as u128;
-    staker.reward_per_token_snapshot = farm.reward_per_token_stored;
+    // Reset earned cache
+    staker.earned_rewards = 0;
 
     // 3. Transfer from Reward Vault -> LP Vault (Staking the rewards)
     let seeds = &[
@@ -47,35 +52,36 @@ pub fn handle_compound(ctx: Context<Compound>) -> Result<()> {
 
     token::transfer(cpi_ctx, pending_rewards)?;
 
-    // 4. Update Weighted Stake Logic
-    // Remove old weight
-    let old_weighted_stake = (staker.balance as u128)
-        .checked_mul(staker.reward_multiplier as u128)
-        .ok_or(StakingError::MathOverflow)?
-        .checked_div(10000)
-        .ok_or(StakingError::MathOverflow)?;
-    farm.total_weighted_stake = farm.total_weighted_stake
-        .checked_sub(old_weighted_stake)
-        .ok_or(StakingError::MathOverflow)?;
-        
-    // Update balance
-    staker.balance = staker.balance.checked_add(pending_rewards).ok_or(StakingError::MathOverflow)?;
+    // 4. Stake the Rewards (Into Flexible Bucket)
+    // We treat compounded rewards as "Flexible" stake (1x multiplier)
     
-    // Add new weight
-    let new_weighted_stake = (staker.balance as u128)
-        .checked_mul(staker.reward_multiplier as u128)
-        .ok_or(StakingError::MathOverflow)?
-        .checked_div(10000)
+    staker.flexible_balance = staker.flexible_balance
+        .checked_add(pending_rewards)
         .ok_or(StakingError::MathOverflow)?;
+    
+    let weight_increase = pending_rewards as u128; // 1x Multiplier
+
+    staker.total_active_weight = staker.total_active_weight
+        .checked_add(weight_increase)
+        .ok_or(StakingError::MathOverflow)?;
+
     farm.total_weighted_stake = farm.total_weighted_stake
-        .checked_add(new_weighted_stake)
+        .checked_add(weight_increase)
+        .ok_or(StakingError::MathOverflow)?;
+
+    // 5. Fix Debt
+    // We added weight, so we must update debt to prevent double claiming
+    staker.reward_debt = staker.total_active_weight
+        .checked_mul(farm.reward_per_token_stored)
+        .ok_or(StakingError::MathOverflow)?
+        .checked_div(PRECISION)
         .ok_or(StakingError::MathOverflow)?;
 
     emit!(Compounded {
         owner: staker.owner,
         farm_address: farm.key(),
         reward_amount_compounded: pending_rewards,
-        new_total_staked_balance: staker.balance,
+        new_total_staked_balance: staker.flexible_balance, // Just showing flex balance here
     });
 
     Ok(())

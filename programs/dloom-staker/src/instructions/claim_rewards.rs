@@ -3,26 +3,30 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{self, Mint, Token, TokenAccount, Transfer}, 
+    token::{self, Mint, Token, TokenAccount, Transfer},
 };
 use crate::{
     errors::StakingError,
     events::RewardsClaimed,
     state::{Farm, Staker},
-    instructions::reward_math::{update_reward_accumulator, calculate_pending_rewards},
+    // Import the new sync function used for the Hybrid model
+    instructions::reward_math::{update_reward_accumulator, sync_staker_rewards},
 };
 
 pub fn handle_claim_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
     let farm = &mut ctx.accounts.farm;
     let staker = &mut ctx.accounts.staker;
 
-    update_reward_accumulator(farm)?;
-    let pending_rewards = calculate_pending_rewards(farm, staker)?;
-    
-    require!(pending_rewards > 0, StakingError::NoRewardsToClaim);
+    require!(!farm.is_paused, StakingError::FarmPaused);
 
-    staker.rewards_paid = pending_rewards as u128;
-    staker.reward_per_token_snapshot = farm.reward_per_token_stored;
+    update_reward_accumulator(farm)?;
+
+    sync_staker_rewards(farm, staker)?;
+
+    let rewards_to_claim = staker.earned_rewards;
+    require!(rewards_to_claim > 0, StakingError::NoRewardsToClaim);
+
+    staker.earned_rewards = 0;
 
     let seeds = &[
         b"farm".as_ref(),
@@ -40,12 +44,13 @@ pub fn handle_claim_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
 
-    token::transfer(cpi_ctx, pending_rewards)?;
+    token::transfer(cpi_ctx, rewards_to_claim)?;
 
+    // 6. Emit Event
     emit!(RewardsClaimed {
         owner: staker.owner,
         farm_address: farm.key(),
-        amount: pending_rewards,
+        amount: rewards_to_claim,
     });
 
     Ok(())
@@ -84,7 +89,7 @@ pub struct ClaimRewards<'info> {
     #[account(
         init_if_needed,
         payer = owner,
-        associated_token::mint = reward_mint, 
+        associated_token::mint = reward_mint,
         associated_token::authority = owner,
     )]
     pub user_reward_token_account: Account<'info, TokenAccount>,

@@ -1,21 +1,35 @@
-pub mod add_lockup_tier;
+// FILE: programs/dloom_stake/src/instructions/mod.rs
+
 pub mod claim_rewards;
 pub mod compound;
-pub mod create_farm;
-pub mod fund_farm;
 pub mod initialize_staker;
-pub mod set_reward_rate;
-pub mod stake;
 pub mod reward_math;
-pub mod unstake;
+pub mod close_staker;
 
-pub use add_lockup_tier::*;
+// Sub-folders
+pub mod admin;
+pub mod bucket;
+pub mod position;
+
+// Export Top Level
 pub use claim_rewards::*;
 pub use compound::*;
-pub use create_farm::*;
-pub use fund_farm::*;
 pub use initialize_staker::*;
-pub use set_reward_rate::*;
-pub use stake::*;
 pub use reward_math::*;
-pub use unstake::*;
+pub use close_staker::*;
+
+// Export Sub-modules
+pub use admin::add_lockup_tier::*;
+pub use admin::create_farm::*;
+pub use admin::fund_farm::*;
+pub use admin::set_reward_rate::*;
+pub use admin::toggle_pause::*;
+pub use admin::emergency_withdraw::*;
+pub use admin::set_emergency_mode::*;
+pub use admin::emergency_unstake::*;
+
+pub use bucket::stake::*;
+pub use bucket::unstake::*;
+
+pub use position::stake::*;
+pub use position::unstake::*;

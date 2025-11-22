@@ -234,6 +234,63 @@
       "args": []
     },
     {
+      "name": "close_staker",
+      "discriminator": [
+        143,
+        15,
+        126,
+        133,
+        130,
+        1,
+        42,
+        62
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "staker"
+          ]
+        },
+        {
+          "name": "farm",
+          "relations": [
+            "staker"
+          ]
+        },
+        {
+          "name": "staker",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "farm"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "compound",
       "discriminator": [
         165,
@@ -510,6 +567,141 @@
       "args": []
     },
     {
+      "name": "emergency_unstake",
+      "discriminator": [
+        123,
+        69,
+        168,
+        195,
+        183,
+        213,
+        199,
+        214
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "staker"
+          ]
+        },
+        {
+          "name": "farm",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  97,
+                  114,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "farm.lp_mint",
+                "account": "Farm"
+              },
+              {
+                "kind": "account",
+                "path": "farm.reward_mint",
+                "account": "Farm"
+              }
+            ]
+          },
+          "relations": [
+            "staker"
+          ]
+        },
+        {
+          "name": "staker",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "farm"
+              }
+            ]
+          }
+        },
+        {
+          "name": "lp_vault",
+          "writable": true
+        },
+        {
+          "name": "user_lp_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "emergency_withdraw",
+      "discriminator": [
+        239,
+        45,
+        203,
+        64,
+        150,
+        73,
+        218,
+        92
+      ],
+      "accounts": [
+        {
+          "name": "farm"
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "farm"
+          ]
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "admin_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "fund_farm",
       "discriminator": [
         24,
@@ -607,6 +799,38 @@
       "args": []
     },
     {
+      "name": "set_emergency_mode",
+      "discriminator": [
+        79,
+        138,
+        190,
+        94,
+        0,
+        162,
+        205,
+        253
+      ],
+      "accounts": [
+        {
+          "name": "farm",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "farm"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "mode",
+          "type": "bool"
+        }
+      ]
+    },
+    {
       "name": "set_reward_rate",
       "discriminator": [
         253,
@@ -639,16 +863,16 @@
       ]
     },
     {
-      "name": "stake",
+      "name": "stake_flexible",
       "discriminator": [
-        206,
-        176,
-        202,
-        18,
-        200,
-        209,
-        179,
-        108
+        153,
+        173,
+        100,
+        160,
+        84,
+        190,
+        207,
+        31
       ],
       "accounts": [
         {
@@ -662,29 +886,6 @@
         {
           "name": "farm",
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  102,
-                  97,
-                  114,
-                  109
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "farm.lp_mint",
-                "account": "Farm"
-              },
-              {
-                "kind": "account",
-                "path": "farm.reward_mint",
-                "account": "Farm"
-              }
-            ]
-          },
           "relations": [
             "staker"
           ]
@@ -733,24 +934,20 @@
         {
           "name": "amount",
           "type": "u64"
-        },
-        {
-          "name": "duration",
-          "type": "i64"
         }
       ]
     },
     {
-      "name": "unstake",
+      "name": "stake_locked",
       "discriminator": [
-        90,
-        95,
-        107,
-        42,
-        205,
-        124,
-        50,
-        225
+        165,
+        31,
+        139,
+        41,
+        64,
+        105,
+        46,
+        13
       ],
       "accounts": [
         {
@@ -764,29 +961,6 @@
         {
           "name": "farm",
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  102,
-                  97,
-                  114,
-                  109
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "farm.lp_mint",
-                "account": "Farm"
-              },
-              {
-                "kind": "account",
-                "path": "farm.reward_mint",
-                "account": "Farm"
-              }
-            ]
-          },
           "relations": [
             "staker"
           ]
@@ -829,11 +1003,150 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
         {
           "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "duration",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "toggle_pause",
+      "discriminator": [
+        238,
+        237,
+        206,
+        27,
+        255,
+        95,
+        123,
+        229
+      ],
+      "accounts": [
+        {
+          "name": "farm",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "farm"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "unstake_flexible",
+      "discriminator": [
+        212,
+        43,
+        8,
+        21,
+        156,
+        144,
+        178,
+        135
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "staker"
+          ]
+        },
+        {
+          "name": "farm",
+          "writable": true,
+          "relations": [
+            "staker"
+          ]
+        },
+        {
+          "name": "staker",
+          "writable": true
+        },
+        {
+          "name": "lp_vault",
+          "writable": true
+        },
+        {
+          "name": "user_lp_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "unstake_locked",
+      "discriminator": [
+        251,
+        104,
+        108,
+        47,
+        168,
+        90,
+        90,
+        199
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "staker"
+          ]
+        },
+        {
+          "name": "farm",
+          "writable": true,
+          "relations": [
+            "staker"
+          ]
+        },
+        {
+          "name": "staker",
+          "writable": true
+        },
+        {
+          "name": "lp_vault",
+          "writable": true
+        },
+        {
+          "name": "user_lp_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "position_id",
           "type": "u64"
         }
       ]
@@ -1054,6 +1367,31 @@
       "code": 6010,
       "name": "DuplicateLockupTier",
       "msg": "This lock-up tier already exists."
+    },
+    {
+      "code": 6011,
+      "name": "FarmPaused",
+      "msg": "The farm is currently paused."
+    },
+    {
+      "code": 6012,
+      "name": "AdminCannotWithdrawLP",
+      "msg": "Admin cannot withdraw from the LP Vault."
+    },
+    {
+      "code": 6013,
+      "name": "EmergencyModeNotEnabled",
+      "msg": "Emergency mode is not enabled."
+    },
+    {
+      "code": 6014,
+      "name": "PositionNotFound",
+      "msg": "The specified position could not be found."
+    },
+    {
+      "code": 6015,
+      "name": "TooManyPositions",
+      "msg": "You have exceeded the maximum allowed positions."
     }
   ],
   "types": [
@@ -1127,6 +1465,14 @@
             "type": "u128"
           },
           {
+            "name": "is_paused",
+            "type": "bool"
+          },
+          {
+            "name": "is_emergency_mode",
+            "type": "bool"
+          },
+          {
             "name": "lockup_tiers",
             "type": {
               "vec": {
@@ -1179,6 +1525,38 @@
           {
             "name": "amount",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LockedPosition",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "lock_start_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "lock_end_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "multiplier",
+            "type": "u16"
+          },
+          {
+            "name": "weight",
+            "type": "u128"
           }
         ]
       }
@@ -1301,24 +1679,34 @@
             "type": "pubkey"
           },
           {
-            "name": "balance",
+            "name": "total_active_weight",
+            "type": "u128"
+          },
+          {
+            "name": "reward_debt",
+            "type": "u128"
+          },
+          {
+            "name": "earned_rewards",
             "type": "u64"
           },
           {
-            "name": "lockup_end_timestamp",
-            "type": "i64"
+            "name": "flexible_balance",
+            "type": "u64"
           },
           {
-            "name": "reward_multiplier",
-            "type": "u16"
+            "name": "next_position_id",
+            "type": "u64"
           },
           {
-            "name": "rewards_paid",
-            "type": "u128"
-          },
-          {
-            "name": "reward_per_token_snapshot",
-            "type": "u128"
+            "name": "positions",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "LockedPosition"
+                }
+              }
+            }
           }
         ]
       }

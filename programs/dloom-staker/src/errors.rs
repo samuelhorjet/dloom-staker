@@ -26,5 +26,14 @@ pub enum StakingError {
     NoRewardsToClaim,
     #[msg("This lock-up tier already exists.")]
     DuplicateLockupTier,
+    #[msg("The farm is currently paused.")]
+    FarmPaused,
+    #[msg("Admin cannot withdraw from the LP Vault.")]
+    AdminCannotWithdrawLP,
+    #[msg("Emergency mode is not enabled.")]
+    EmergencyModeNotEnabled,
+    #[msg("The specified position could not be found.")]
+    PositionNotFound,
+    #[msg("You have exceeded the maximum allowed positions.")]
+    TooManyPositions,
 }
-

@@ -12,11 +12,16 @@ pub fn handle_initialize_staker(ctx: Context<InitializeStaker>) -> Result<()> {
     staker.bump = ctx.bumps.staker;
     staker.owner = ctx.accounts.owner.key();
     staker.farm = ctx.accounts.farm.key();
-    staker.balance = 0;
-    staker.lockup_end_timestamp = 0;
-    staker.reward_multiplier = 10000; 
-    staker.rewards_paid = 0;
-    staker.reward_per_token_snapshot = 0;
+    
+    // New Fields
+    staker.total_active_weight = 0;
+    staker.reward_debt = 0;
+    staker.earned_rewards = 0;
+    
+    staker.flexible_balance = 0;
+    
+    staker.next_position_id = 1; 
+    staker.positions = Vec::new(); 
 
     emit!(StakerInitialized {
         staker_address: staker.key(),
@@ -37,7 +42,7 @@ pub struct InitializeStaker<'info> {
     #[account(
         init,
         payer = owner,
-        space = 8 + 1 + 32 + 32 + 8 + 8 + 2 + 16 + 16, 
+        space = Staker::BASE_SIZE,
         seeds = [b"staker", owner.key().as_ref(), farm.key().as_ref()],
         bump
     )]

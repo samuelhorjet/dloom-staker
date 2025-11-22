@@ -1,3 +1,5 @@
+// FILE: programs/dloom_stake/src/state/farm.rs
+
 use anchor_lang::prelude::*;
 
 #[account]
@@ -12,7 +14,9 @@ pub struct Farm {
     pub reward_rate: u64, 
     pub last_update_timestamp: i64,
     pub total_weighted_stake: u128,
-    pub reward_per_token_stored: u128, 
+    pub reward_per_token_stored: u128,
+    pub is_paused: bool,         
+    pub is_emergency_mode: bool, 
     pub lockup_tiers: Vec<LockupTier>,
 }
 

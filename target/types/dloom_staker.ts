@@ -240,6 +240,63 @@ export type DloomStaker = {
       "args": []
     },
     {
+      "name": "closeStaker",
+      "discriminator": [
+        143,
+        15,
+        126,
+        133,
+        130,
+        1,
+        42,
+        62
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "staker"
+          ]
+        },
+        {
+          "name": "farm",
+          "relations": [
+            "staker"
+          ]
+        },
+        {
+          "name": "staker",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "farm"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "compound",
       "discriminator": [
         165,
@@ -516,6 +573,141 @@ export type DloomStaker = {
       "args": []
     },
     {
+      "name": "emergencyUnstake",
+      "discriminator": [
+        123,
+        69,
+        168,
+        195,
+        183,
+        213,
+        199,
+        214
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "staker"
+          ]
+        },
+        {
+          "name": "farm",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  97,
+                  114,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "farm.lp_mint",
+                "account": "farm"
+              },
+              {
+                "kind": "account",
+                "path": "farm.reward_mint",
+                "account": "farm"
+              }
+            ]
+          },
+          "relations": [
+            "staker"
+          ]
+        },
+        {
+          "name": "staker",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              },
+              {
+                "kind": "account",
+                "path": "farm"
+              }
+            ]
+          }
+        },
+        {
+          "name": "lpVault",
+          "writable": true
+        },
+        {
+          "name": "userLpTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "emergencyWithdraw",
+      "discriminator": [
+        239,
+        45,
+        203,
+        64,
+        150,
+        73,
+        218,
+        92
+      ],
+      "accounts": [
+        {
+          "name": "farm"
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "farm"
+          ]
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "adminTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "fundFarm",
       "discriminator": [
         24,
@@ -613,6 +805,38 @@ export type DloomStaker = {
       "args": []
     },
     {
+      "name": "setEmergencyMode",
+      "discriminator": [
+        79,
+        138,
+        190,
+        94,
+        0,
+        162,
+        205,
+        253
+      ],
+      "accounts": [
+        {
+          "name": "farm",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "farm"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "mode",
+          "type": "bool"
+        }
+      ]
+    },
+    {
       "name": "setRewardRate",
       "discriminator": [
         253,
@@ -645,16 +869,16 @@ export type DloomStaker = {
       ]
     },
     {
-      "name": "stake",
+      "name": "stakeFlexible",
       "discriminator": [
-        206,
-        176,
-        202,
-        18,
-        200,
-        209,
-        179,
-        108
+        153,
+        173,
+        100,
+        160,
+        84,
+        190,
+        207,
+        31
       ],
       "accounts": [
         {
@@ -668,29 +892,6 @@ export type DloomStaker = {
         {
           "name": "farm",
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  102,
-                  97,
-                  114,
-                  109
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "farm.lp_mint",
-                "account": "farm"
-              },
-              {
-                "kind": "account",
-                "path": "farm.reward_mint",
-                "account": "farm"
-              }
-            ]
-          },
           "relations": [
             "staker"
           ]
@@ -739,24 +940,20 @@ export type DloomStaker = {
         {
           "name": "amount",
           "type": "u64"
-        },
-        {
-          "name": "duration",
-          "type": "i64"
         }
       ]
     },
     {
-      "name": "unstake",
+      "name": "stakeLocked",
       "discriminator": [
-        90,
-        95,
-        107,
-        42,
-        205,
-        124,
-        50,
-        225
+        165,
+        31,
+        139,
+        41,
+        64,
+        105,
+        46,
+        13
       ],
       "accounts": [
         {
@@ -770,29 +967,6 @@ export type DloomStaker = {
         {
           "name": "farm",
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  102,
-                  97,
-                  114,
-                  109
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "farm.lp_mint",
-                "account": "farm"
-              },
-              {
-                "kind": "account",
-                "path": "farm.reward_mint",
-                "account": "farm"
-              }
-            ]
-          },
           "relations": [
             "staker"
           ]
@@ -835,11 +1009,150 @@ export type DloomStaker = {
         {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "systemProgram",
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
         {
           "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "duration",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "togglePause",
+      "discriminator": [
+        238,
+        237,
+        206,
+        27,
+        255,
+        95,
+        123,
+        229
+      ],
+      "accounts": [
+        {
+          "name": "farm",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "farm"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "unstakeFlexible",
+      "discriminator": [
+        212,
+        43,
+        8,
+        21,
+        156,
+        144,
+        178,
+        135
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "staker"
+          ]
+        },
+        {
+          "name": "farm",
+          "writable": true,
+          "relations": [
+            "staker"
+          ]
+        },
+        {
+          "name": "staker",
+          "writable": true
+        },
+        {
+          "name": "lpVault",
+          "writable": true
+        },
+        {
+          "name": "userLpTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "unstakeLocked",
+      "discriminator": [
+        251,
+        104,
+        108,
+        47,
+        168,
+        90,
+        90,
+        199
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "staker"
+          ]
+        },
+        {
+          "name": "farm",
+          "writable": true,
+          "relations": [
+            "staker"
+          ]
+        },
+        {
+          "name": "staker",
+          "writable": true
+        },
+        {
+          "name": "lpVault",
+          "writable": true
+        },
+        {
+          "name": "userLpTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "positionId",
           "type": "u64"
         }
       ]
@@ -1060,6 +1373,31 @@ export type DloomStaker = {
       "code": 6010,
       "name": "duplicateLockupTier",
       "msg": "This lock-up tier already exists."
+    },
+    {
+      "code": 6011,
+      "name": "farmPaused",
+      "msg": "The farm is currently paused."
+    },
+    {
+      "code": 6012,
+      "name": "adminCannotWithdrawLp",
+      "msg": "Admin cannot withdraw from the LP Vault."
+    },
+    {
+      "code": 6013,
+      "name": "emergencyModeNotEnabled",
+      "msg": "Emergency mode is not enabled."
+    },
+    {
+      "code": 6014,
+      "name": "positionNotFound",
+      "msg": "The specified position could not be found."
+    },
+    {
+      "code": 6015,
+      "name": "tooManyPositions",
+      "msg": "You have exceeded the maximum allowed positions."
     }
   ],
   "types": [
@@ -1133,6 +1471,14 @@ export type DloomStaker = {
             "type": "u128"
           },
           {
+            "name": "isPaused",
+            "type": "bool"
+          },
+          {
+            "name": "isEmergencyMode",
+            "type": "bool"
+          },
+          {
             "name": "lockupTiers",
             "type": {
               "vec": {
@@ -1185,6 +1531,38 @@ export type DloomStaker = {
           {
             "name": "amount",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "lockedPosition",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "u64"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "lockStartTimestamp",
+            "type": "i64"
+          },
+          {
+            "name": "lockEndTimestamp",
+            "type": "i64"
+          },
+          {
+            "name": "multiplier",
+            "type": "u16"
+          },
+          {
+            "name": "weight",
+            "type": "u128"
           }
         ]
       }
@@ -1307,24 +1685,34 @@ export type DloomStaker = {
             "type": "pubkey"
           },
           {
-            "name": "balance",
+            "name": "totalActiveWeight",
+            "type": "u128"
+          },
+          {
+            "name": "rewardDebt",
+            "type": "u128"
+          },
+          {
+            "name": "earnedRewards",
             "type": "u64"
           },
           {
-            "name": "lockupEndTimestamp",
-            "type": "i64"
+            "name": "flexibleBalance",
+            "type": "u64"
           },
           {
-            "name": "rewardMultiplier",
-            "type": "u16"
+            "name": "nextPositionId",
+            "type": "u64"
           },
           {
-            "name": "rewardsPaid",
-            "type": "u128"
-          },
-          {
-            "name": "rewardPerTokenSnapshot",
-            "type": "u128"
+            "name": "positions",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "lockedPosition"
+                }
+              }
+            }
           }
         ]
       }
